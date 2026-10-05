@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "AcrossB Flow QR Helper (Local)",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "작업 중 배치 코드와 QR을 대조하여 행 체크박스만 선택하는 로컬 보조 도구",
   "content_scripts": [{
     "matches": ["https://axb-us-cpm-1.flow.acrossb.io/flow/work-groups*"],
