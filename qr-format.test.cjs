@@ -7,6 +7,9 @@ test('하이픈과 언더바 QR은 같은 날짜/배치로 정규화',()=>{
     const qr=parseQR(`09-23_${batch}\r\n`), row=parseCode(`2026-09-23_${batch}`);
     for(const field of ['month','day','batch']) assert.equal(qr[field],row[field]);
   }
+  assert.deepEqual(parseQR('10_02_397'),parseQR('10-02_397'));
+  const october=parseQR('10_02_397'), octoberRow=parseCode('2026-10-02_397');
+  for(const field of ['month','day','batch']) assert.equal(october[field],octoberRow[field]);
 });
 test('날짜 또는 구분자가 잘못된 입력은 계속 차단',()=>{
   for(const raw of ['23_398','09-23-473','09/23_473','0923_473','02-30_473','13-23_473','09-23_0','09-23_0473','09-23_473x']) assert.throws(()=>parseQR(raw));
