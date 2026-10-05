@@ -27,12 +27,19 @@
   document.documentElement.append(host);
   const $=id=>ui.getElementById(id), engine=new api.Engine(document,()=>location.href);
   let lastURL=location.href;
+  function lookupLabel(raw) {
+    try {
+      const qr=api.parseQR(raw);
+      return `${qr.month}-${qr.day}_${qr.batch}`;
+    } catch { return null; }
+  }
   function log(out, raw) {
     const at=new Date().toLocaleString('ko-KR',{hour12:false});
-    $('status').textContent=[out.result,out.code].filter(Boolean).join(' · ');
+    const lookup=lookupLabel(raw);
+    $('status').textContent=[out.result,lookup&&`검색 ${lookup}`,out.code].filter(Boolean).join(' · ');
     const item=document.createElement('article');
     const time=document.createElement('small');time.textContent=at;
-    const text=document.createElement('div');text.textContent=`${raw} → ${out.result}${out.code?' · '+out.code:''}`;
+    const text=document.createElement('div');text.textContent=`${raw}${lookup?' → 검색 '+lookup:''} → ${out.result}${out.code?' · '+out.code:''}`;
     item.append(time,text);
     if(out.undo){const undo=document.createElement('button');undo.type='button';undo.textContent='이 선택 취소';
       undo.addEventListener('click',async()=>{if(engine.busy)return;undo.disabled=true;
