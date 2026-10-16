@@ -32,11 +32,11 @@
   function inspect(doc, url) {
     if (!allowed(url)) fail('대상 페이지 아님');
     if (doc.querySelector('[role="dialog"], [aria-modal="true"], [aria-busy="true"]')) fail('화면 구조 불명확: 대화상자/로딩');
-    const tabs = [...doc.querySelectorAll('button')].filter(e => /^작업 중\s*\d/.test(norm(e.textContent)) && visible(e));
+    const tabs = [...doc.querySelectorAll('button')].filter(e => /^(?:작업 중|In progress)\s*\d/i.test(norm(e.textContent)) && visible(e));
     if (tabs.length !== 1 || !tabs[0].querySelector('.bg-grayblue-50')) fail('작업 중 탭 확인 실패');
-    const count = /작업 중\s*([\d,]+)배치\s*\//.exec(norm(tabs[0].textContent));
+    const count = /^(?:작업 중\s*([\d,]+)배치|In progress\s*([\d,]+)\s*batches?)\s*\//i.exec(norm(tabs[0].textContent));
     if (!count) fail('전체 배치 수 확인 실패');
-    const headers = [...doc.querySelectorAll('span')].filter(e => norm(e.textContent) === '고객사 / 배치 코드' && visible(e));
+    const headers = [...doc.querySelectorAll('span')].filter(e => ['고객사 / 배치 코드','Customer / Batch'].includes(norm(e.textContent)) && visible(e));
     if (headers.length !== 1) fail('날짜 기준/헤더 확인 실패');
     const header = headers[0].parentElement.parentElement;
     const container = header.parentElement;
@@ -44,7 +44,7 @@
         header.querySelectorAll('input[type="checkbox"]').length !== 1) fail('화면 구조 불명확: 목록');
     const list = container.children[1];
     const rowEls = [...list.querySelectorAll('div[role="button"]')].filter(e => e.querySelector('input[type="checkbox"]'));
-    if (rowEls.length !== +count[1].replace(/,/g, '')) fail('전체 목록 미확인: 필터/부분 로딩');
+    if (rowEls.length !== +(count[1] || count[2]).replace(/,/g, '')) fail('전체 목록 미확인: 필터/부분 로딩');
     const rows = rowEls.map(row => {
       const line = row.firstElementChild;
       const checks = row.querySelectorAll('input[type="checkbox"]');
@@ -74,7 +74,7 @@
   const pause = ms => new Promise(resolve => setTimeout(resolve, ms));
   class Engine {
     constructor(doc, getURL) { this.doc=doc; this.getURL=getURL; this.busy=false; this.owned=new Map(); }
-    async run(raw, {dry=true, dateConfirmed=false, undoCode=null}={}) {
+    async run(raw, {dry=false, undoCode=null}={}) {
       if (this.busy) return {result:'처리 중: 재스캔 필요', raw};
       this.busy=true;
       let r;
@@ -82,7 +82,6 @@
         const qr=parseQR(raw);
         let s=inspect(this.doc,this.getURL()); r=match(s,qr);
         if (undoCode && (r.code!==undoCode || this.owned.get(undoCode)!==r.cb)) fail('취소 불가: 이 도구의 선택 이력/행이 변경됨');
-        if (!dry && !dateConfirmed) fail('날짜 기준 확인 필요');
         if (!undoCode && r.checked) return {result:'이미 선택됨',code:r.code,raw};
         if (undoCode && !r.checked) { this.owned.delete(r.code); return {result:'이미 해제됨',code:r.code,raw}; }
         await pause(220);
@@ -110,4 +109,3 @@
   const api={allowed,parseQR,parseCode,inspect,match,Engine};
   if (typeof module!=='undefined') module.exports=api; else root.AcrossBHelper=api;
 })(typeof globalThis!=='undefined'?globalThis:this);
-
